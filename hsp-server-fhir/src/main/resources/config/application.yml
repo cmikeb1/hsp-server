@@ -1,0 +1,16 @@
+spring:
+  profiles.active: derby,open
+
+api:
+  authorizationServerLaunchEndpointURL: http://localhost:8080/hsp-reference-authorization/Launch
+  authorizationTokenIntrospectionURL: http://localhost:8080/hsp-reference-authorization/introspect
+  apiServerClientId: hsp_resource_server
+  apiServerClientSecret: secret
+
+metadata:
+  tokenEndpointExtensionUrl: http://fhir-registry.smarthealthit.org/Profile/oauth-uris#token
+  tokenEndpointUri: http://localhost:8080/hsp-reference-authorization/token
+  authorizationEndpointExtensionUrl: http://fhir-registry.smarthealthit.org/Profile/oauth-uris#authorize
+  authorizationEndpointUri: http://localhost:8080/hsp-reference-authorization/authorize
+  registrationEndpointExtensionUrl: http://fhir-registry.smarthealthit.org/Profile/oauth-uris#register
+  registrationEndpointUri: http://localhost:8080/hsp-reference-authorization/register

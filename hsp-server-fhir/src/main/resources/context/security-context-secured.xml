@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2015. Healthcare Services Platform Consortium. All Rights Reserved. -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:oauth="http://www.springframework.org/schema/security/oauth2"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+	                          http://www.springframework.org/schema/security/oauth2 http://www.springframework.org/schema/security/spring-security-oauth2-2.0.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd"
+        >
+
+<security:global-method-security pre-post-annotations="enabled" proxy-target-class="true" authentication-manager-ref="authenticationManager"/>
+
+    <security:http pattern="/data/metadata/**" security="none" />
+
+    <security:http pattern="/data/_services/smart/Launch" security="none" />
+
+    <bean id="authenticationEntryPoint" class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint"/>
+
+    <bean id="accessDeniedHandler" class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler"/>
+
+    <security:http auto-config="false" use-expressions="true"
+                   disable-url-rewriting="true" entry-point-ref="authenticationEntryPoint"
+                   pattern="/data/**" create-session="stateless">
+
+        <!--<security:csrf request-matcher-ref="csrfMatcher"/>-->
+
+        <security:headers>
+            <security:frame-options policy="SAMEORIGIN"/>
+        </security:headers>
+
+        <!--<security:intercept-url method="GET" pattern="/Patient/**" requires-channel="http" />-->
+        <!--<security:intercept-url method="GET" pattern="/Observation/**" requires-channel="http"/>-->
+
+        <security:intercept-url method="GET" pattern="/data/**" access="hasAnyAuthority('DUMMY_SCOPE')"/>
+        <!--<security:intercept-url method="GET" pattern="/Observation/**" access="hasRole('SCOPE_PATIENT_DATA_READ')"/>-->
+        <!--<security:intercept-url method="GET" pattern="/Patient/**" requires-channel="https" />-->
+        <!--<security:intercept-url method="GET" pattern="/Observation/**" requires-channel="https"/>-->
+        <!--<security:intercept-url pattern="/metadata/**" requires-channel="https" />-->
+        <!--<security:intercept-url pattern="/**" requires-channel="https" />-->
+
+        <security:custom-filter before="PRE_AUTH_FILTER" ref="resourceServerFilter" />
+        <!--<security:custom-filter position="BASIC_AUTH_FILTER" ref="basicAuthenticationFilter" />-->
+
+        <security:access-denied-handler ref="accessDeniedHandler"/>
+        <!--<security:port-mappings>-->
+        <!--<security:port-mapping http="8080" https="8443"/>-->
+        <!--<security:port-mapping http="80" https="443"/>-->
+        <!--</security:port-mappings>-->
+    </security:http>
+
+    <!--<bean id="csrfMatcher"-->
+            <!--class="org.springframework.security.web.util.matcher.AndRequestMatcher">-->
+        <!--<constructor-arg>-->
+            <!--<util:list>-->
+                <!--<value>#{T(org.springframework.security.web.csrf.CsrfFilter).DEFAULT_CSRF_MATCHER}</value>-->
+                <!--<bean class="org.springframework.security.web.util.matcher.NegatedRequestMatcher">-->
+                    <!--<constructor-arg>-->
+                        <!--<bean class="org.springframework.security.web.util.matcher.AntPathRequestMatcher">-->
+                            <!--<constructor-arg value="/data/_services/**"/>-->
+                        <!--</bean>-->
+                    <!--</constructor-arg>-->
+                <!--</bean>-->
+            <!--</util:list>-->
+        <!--</constructor-arg>-->
+    <!--</bean>-->
+
+    <oauth:resource-server id="resourceServerFilter" token-services-ref="introspectingService" />
+
+    <bean id="basicAuthenticationFilter" class="org.springframework.security.web.authentication.www.BasicAuthenticationFilter">
+        <constructor-arg name="authenticationManager" ref="authenticationManager"/>
+        <constructor-arg name="authenticationEntryPoint" ref="authenticationEntryPoint"/>
+    </bean>
+
+    <bean id="introspectingService" class="org.mitre.oauth2.introspectingfilter.IntrospectingTokenService">
+        <property name="introspectionConfigurationService" ref="introspectionConfigurationService" />
+        <property name="introspectionAuthorityGranter" ref="introspectionAuthorityGranter" />
+    </bean>
+
+    <bean id="introspectionConfigurationService" class="org.mitre.oauth2.introspectingfilter.service.impl.StaticIntrospectionConfigurationService">
+        <property name="clientConfiguration" ref="registeredClient" />
+        <property name="introspectionUrl" value="http://localhost:8080/hsp-reference-authorization/introspect" />
+    </bean>
+
+    <bean id="registeredClient"  class="org.mitre.oauth2.model.RegisteredClient">
+        <property name="clientId" value="hsp_resource_server"/>
+        <property name="clientSecret" value="secret"/>
+    </bean>
+
+    <bean id="introspectionAuthorityGranter" class="org.hspconsortium.platform.security.oauth.mitre.ScopeBasedIntrospectionAuthorityGranter"/>
+
+    <security:authentication-manager alias="authenticationManager">
+        <security:authentication-provider>
+            <security:user-service>
+                <security:user name="client" password="secret" authorities="ROLE_EHR_USER"/>
+            </security:user-service>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+</beans>
